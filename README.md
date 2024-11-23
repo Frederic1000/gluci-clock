@@ -28,7 +28,7 @@ const char *NS_API_URL = "https://your-nightscout-site/api/v1/entries.json?count
 // with API READ rights
 const char *NS_API_SECRET = "your-API-secret or token";
 ```
-Don't foreget to add this file in ```.gitignore``` file.
+Don't foreget to add this ```secrets.h``` file in ```.gitignore``` file.
 
 ### Dependencies
 ArduinoJson-6.21.5 https://www.arduino.cc/reference/en/libraries/arduinojson/
