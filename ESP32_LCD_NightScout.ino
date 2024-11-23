@@ -9,9 +9,22 @@
  *
 */
 
+// development IDE: Arduino 1.8.9
 // intall libraries: multiwifi, arduinoJson, ESP32
 
-// [{"type":"sgv","device":"nightscout-librelink-up","dateString":"2023-12-28T18:13:13.000Z","date":1703787193000,"direction":"Flat","sgv":136,"utcOffset":0,"sysTime":"2023-12-28T18:13:13.000Z","_id":"658dbae906111d8be8e3699e","mills":1703787193000}]
+// Response example from NightScout:
+// [{
+//     "_id":"999999999999999999999999",
+//     "type":"sgv",
+//     "sgv":217,
+//     "direction":"Flat",
+//     "device":"nightscout-librelink-up",
+//     "date":1732386771000,
+//     "dateString":"2024-11-23T18:32:51.000Z",
+//     "utcOffset":0,
+//     "sysTime":"2024-11-23T18:32:51.000Z",
+//     "mills":1732386771000
+// }]
 
 #include <Arduino.h>
 
@@ -28,10 +41,8 @@
 
 #include <LiquidCrystal.h>
 
-// wifi credentials and NightScout API key
+// wifi credentials, NightScout URL and API key
 #include "secrets.h"
-
-#define USE_SERIAL Serial
 
 WiFiMulti wifiMulti;
 
@@ -178,15 +189,15 @@ byte doubleUp[8] = {
 
 void setup() {
 
-  USE_SERIAL.begin(115200);
+  Serial.begin(115200);
 
-  USE_SERIAL.println();
-  USE_SERIAL.println();
-  USE_SERIAL.println("ESP start");
+  Serial.println();
+  Serial.println();
+  Serial.println("ESP start");
 
   // Initialize display
-  USE_SERIAL.println();
-  USE_SERIAL.println("[DISPLAY] Initializing LCD");
+  Serial.println();
+  Serial.println("[DISPLAY] Initializing LCD");
   // LCD Contrast
   ledcSetup(pwmChannel, frequency, resolution);
   ledcAttachPin(pwmPin, pwmChannel);
@@ -200,7 +211,7 @@ void setup() {
   lcd.createChar(5, singleUp);
   lcd.createChar(6, doubleUp);
   
-  lcd.begin(16,2); // columns, rows of the LCD
+  lcd.begin(16,2); // columns, rows of the LCD, zero index( 0-15, 0-1 )
 
   lcd.clear();
   lcd.setCursor(0,0); // first line
@@ -218,14 +229,14 @@ void setup() {
   }
 
   if((wifiMulti.run() == WL_CONNECTED)) {
-    USE_SERIAL.println();
-    USE_SERIAL.print("[WiFiMulti] Connected to: ");
-    USE_SERIAL.print(WiFi.SSID());
-    USE_SERIAL.print(" IP: ");
-    USE_SERIAL.println(WiFi.localIP());
+    Serial.println();
+    Serial.print("[WiFiMulti] Connected to: ");
+    Serial.print(WiFi.SSID());
+    Serial.print(" IP: ");
+    Serial.println(WiFi.localIP());
   } else {
-    USE_SERIAL.println();
-    USE_SERIAL.printf("[WiFiMulti] Unable to connect to wifi");
+    Serial.println();
+    Serial.printf("[WiFiMulti] Unable to connect to wifi");
   }
   // timeClient.begin();
   initTime(time_zone);
@@ -238,31 +249,31 @@ void loop() {
       
     HTTPClient http;
 
-    USE_SERIAL.println();
-    USE_SERIAL.println("[HTTP] begin...");
+    Serial.println();
+    Serial.println("[HTTP] begin...");
     http.begin(NS_API_URL); // latest value
     http.addHeader("API-SECRET", NS_API_SECRET);
-    USE_SERIAL.print("[HTTP] GET...\n");
+    Serial.print("[HTTP] GET...\n");
     // start connection and send HTTP header
     int httpCode = http.GET();   
     // httpCode will be negative on error
     if(httpCode > 0) {
       // HTTP header has been send and Server response header has been handled
-      USE_SERIAL.printf("[HTTP] GET... code: %d\n", httpCode);
+      Serial.printf("[HTTP] GET... code: %d\n", httpCode);
 
       // file found at server
       if(httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
-        USE_SERIAL.println(payload);
+        Serial.println(payload);
 
         // parse Json response
         StaticJsonDocument<500> httpResponseBody; // buffer size for Json parser
         DeserializationError error = deserializeJson(httpResponseBody, payload);
         // Test if parsing succeeds.
         if (error) {
-          USE_SERIAL.println();
-          USE_SERIAL.print(F("deserializeJson() failed: "));
-          USE_SERIAL.println(error.f_str());
+          Serial.println();
+          Serial.print(F("deserializeJson() failed: "));
+          Serial.println(error.f_str());
         } else {
           // Fetch values.
           //
@@ -272,87 +283,89 @@ void loop() {
           // Directions: Flat, FortyFiveUp, FortyFiveDown, SingleUp, SingleDown, DoubleUp, DoubleDown
           const char* direct = httpResponseBody[0]["direction"];
           long sgv = long(httpResponseBody[0]["sgv"]);
+          
           const char* sysTime = httpResponseBody[0]["sysTime"]; // GMT
-          char measureTime[8];
-          strncpy(measureTime,sysTime+(12-1),8); // GMT
+          char measureTime[9];
+          strncpy(measureTime, sysTime + (12 - 1), 8); // GMT
+          measureTime[8] = '\0'; // end of chain
 
         
           // Display values
-          USE_SERIAL.println(type);
-          USE_SERIAL.println(direct);
-          USE_SERIAL.println(sgv);
-          USE_SERIAL.println(sysTime); // GMT of the measure
-          USE_SERIAL.println(measureTime); // GMT of the measure
-          USE_SERIAL.println(); // New line before printing same message on selial than LCD
+          Serial.println(type);
+          Serial.println(direct);
+          Serial.println(sgv);
+          Serial.println(sysTime); // GMT of the measure
+          Serial.println(measureTime); // GMT of the measure
+          Serial.println("\n0123456789012345\n"); // New line before printing same message on serial than LCD
           
           if (strcmp(type, "sgv") == 0){
             lcd.clear();
             if (sgv < 100){
               lcd.setCursor(3,0);
-              USE_SERIAL.print("__");
+              Serial.print("__");
             } else {
               lcd.setCursor(2,0);
-              USE_SERIAL.print("_");
+              Serial.print("_");
             }
             lcd.print(sgv);
-            USE_SERIAL.print(sgv);
+            Serial.print(sgv);
             // lcd.setCursor(6,0);
             lcd.print (" mg/dL ");
-            USE_SERIAL.print(" mg/dL ");
+            Serial.print("_mg/dL_");
             
             if(strcmp(direct, "Flat") == 0) {
               lcd.write(byte(0));
-              USE_SERIAL.print(byte(0));
+              Serial.print("f");
             }
             else if(strcmp(direct, "FortyFiveDown") == 0) {
               lcd.write(byte(1));
-              USE_SERIAL.print(byte(1));
+              Serial.print("d");
             }
             else if(strcmp(direct, "SingleDown") == 0) {
               lcd.write(byte(2));
-              USE_SERIAL.print(byte(2));
+              Serial.print("D");
             }
             else if(strcmp(direct, "DoubleDown") == 0) {
               lcd.write(byte(3));
-              USE_SERIAL.print(byte(3));
+              Serial.print("D");
             }
             else if(strcmp(direct, "FortyFiveUp") == 0) {
               lcd.write(byte(4));
-              USE_SERIAL.print(byte(4));
+              Serial.print("u");
             }
             else if(strcmp(direct, "SingleUp") == 0) {
               lcd.write(byte(5));
-              USE_SERIAL.print(byte(5));
+              Serial.print("U");
             }
             else if(strcmp(direct, "DoubleUp") == 0) {
               lcd.write(byte(6));
-              USE_SERIAL.print(byte(6));
+              Serial.print("U");
             }
             else {
               lcd.print(direct);
-              USE_SERIAL.print(direct);
+              Serial.print(direct);
             }
             lcd.setCursor(0,1);
-            USE_SERIAL.println();
+            Serial.println();
             lcd.print("at ");
-            USE_SERIAL.print("at ");
+            Serial.print("at_");
             lcd.print(measureTime);
-            USE_SERIAL.print(measureTime);
+            Serial.print(measureTime);
             lcd.setCursor(11,1);
             lcd.print(" UTC ");
-            USE_SERIAL.print(" UTC ");            
+            Serial.print("_UTC_");
           }
         }
       }
     } else {
-      USE_SERIAL.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+      Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
 
     http.end();
   }
   
   // timeClient.update();
-  // USE_SERIAL.println(timeClient.getFormattedTime());
+  // Serial.println(timeClient.getFormattedTime());
   
   delay(2*60*1000); // in ms -> retrieve data and update every 2 minutes
 }
