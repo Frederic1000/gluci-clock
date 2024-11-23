@@ -1,7 +1,7 @@
 /**
  * ESP32_LCD_NightScout.ino
  *
- *  Created on: 27.12.2023
+ *  Version date: 2024-11-23
  *  
  *  For diabetics using a NightScout database
  *  Retrieve glycemia every 2 minutes
@@ -283,46 +283,64 @@ void loop() {
           USE_SERIAL.println(sgv);
           USE_SERIAL.println(sysTime); // GMT of the measure
           USE_SERIAL.println(measureTime); // GMT of the measure
+          USE_SERIAL.println(); // New line before printing same message on selial than LCD
           
           if (strcmp(type, "sgv") == 0){
             lcd.clear();
             if (sgv < 100){
               lcd.setCursor(3,0);
+              USE_SERIAL.print("__");
             } else {
               lcd.setCursor(2,0);
+              USE_SERIAL.print("_");
             }
             lcd.print(sgv);
+            USE_SERIAL.print(sgv);
             // lcd.setCursor(6,0);
             lcd.print (" mg/dL ");
+            USE_SERIAL.print(" mg/dL ");
             
-            if(strcmp(direct, "Flat") == 0) {lcd.write(byte(0));}
+            if(strcmp(direct, "Flat") == 0) {
+              lcd.write(byte(0));
+              USE_SERIAL.print(byte(0));
+            }
             else if(strcmp(direct, "FortyFiveDown") == 0) {
               lcd.write(byte(1));
+              USE_SERIAL.print(byte(1));
             }
             else if(strcmp(direct, "SingleDown") == 0) {
               lcd.write(byte(2));
+              USE_SERIAL.print(byte(2));
             }
             else if(strcmp(direct, "DoubleDown") == 0) {
               lcd.write(byte(3));
+              USE_SERIAL.print(byte(3));
             }
             else if(strcmp(direct, "FortyFiveUp") == 0) {
               lcd.write(byte(4));
+              USE_SERIAL.print(byte(4));
             }
             else if(strcmp(direct, "SingleUp") == 0) {
               lcd.write(byte(5));
+              USE_SERIAL.print(byte(5));
             }
             else if(strcmp(direct, "DoubleUp") == 0) {
               lcd.write(byte(6));
+              USE_SERIAL.print(byte(6));
             }
-            else {lcd.print(
-              direct);
+            else {
+              lcd.print(direct);
+              USE_SERIAL.print(direct);
             }
             lcd.setCursor(0,1);
+            USE_SERIAL.println();
             lcd.print("at ");
+            USE_SERIAL.print("at ");
             lcd.print(measureTime);
+            USE_SERIAL.print(measureTime);
             lcd.setCursor(11,1);
             lcd.print(" UTC ");
-            
+            USE_SERIAL.print(" UTC ");            
           }
         }
       }

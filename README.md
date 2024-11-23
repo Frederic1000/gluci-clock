@@ -15,7 +15,7 @@ struct wifi_cred {
   const char *password;
 };
 
-const struct wifi_cred WIFI_CREDENTIALS[] = {
+const wifi_cred WIFI_CREDENTIALS[] = {
   {"wifi_ssid1", "wifi_pw1"},
   {"wifi_ssid2", "wifi_pw2"},
   {"wifi_ssid3"},
@@ -39,4 +39,8 @@ ArduinoJson-6.21.5 https://www.arduino.cc/reference/en/libraries/arduinojson/
 LiquidCrystal 1.0.7 https://www.arduino.cc/reference/en/libraries/liquidcrystal/
 
 WifiMulti_Generic 1.2.2 https://www.arduino.cc/reference/en/libraries/wifimulti_generic/
+
+### Development environment
+Arduino 1.8.19
+
 
