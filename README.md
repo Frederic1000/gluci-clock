@@ -21,14 +21,17 @@ const struct wifi_cred WIFI_CREDENTIALS[] = {
   {"wifi_ssid3"},
 };
 
+
 // url and API key for Nightscout
+
 // Don't foreget to add '?count=1' to the URL
 const char *NS_API_URL = "https://your-nightscout-site/api/v1/entries.json?count=1"
-// key defined in NS > Hamburger menu > Admon tools
+
+// key defined in NS > Hamburger menu > Admin tools
 // with API READ rights
 const char *NS_API_SECRET = "your-API-secret or token";
 ```
-Don't foreget to add this file in ```.gitignore``` file.
+Don't foreget to add this ```secrets.h``` file in ```.gitignore``` file.
 
 ### Dependencies
 ArduinoJson-6.21.5 https://www.arduino.cc/reference/en/libraries/arduinojson/
