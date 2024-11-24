@@ -35,7 +35,7 @@ Don't foreget to add this ```secrets.h``` file in ```.gitignore``` file.
 
 ### Materials needed:
 
-# ESP32 development module:
+#### ESP32 development module:
 
 AZDelivery ESP32 NodeMCU module WLAN Wifi Dev Kit C (with CP 2102)
 
@@ -43,16 +43,18 @@ https://amzn.eu/d/8uNnGYs
 
 Cost: 10 €
 
-# LCD screen: I used an old screen from my DIY box...
+#### LCD screen: I used an old screen from my DIY box...
 
 ????
 
-# Cables
+#### Cables
 
 ### Development environment
 Arduino IDE version 1.8.19
 
 Card: ESP32 dev module
+
+https://github.com/espressif/arduino-esp32
 
 Upload speed: 921600
 

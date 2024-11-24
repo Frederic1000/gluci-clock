@@ -35,6 +35,7 @@
 // Internet time
 // #include <NTPClient.h>
 // #include <WiFiUdp.h>
+
 #include <time.h>
 
 #include <ArduinoJson.h>
@@ -73,7 +74,10 @@ WiFiMulti wifiMulti;
 // Time zone for local time and daylight saving
 // list here:
 // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char* time_zone = "CET-1CEST,M3.5.0,M10.5.0/3"; // set for Europe/Paris
+const char* local_time_zone = "CET-1CEST,M3.5.0,M10.5.0/3"; // set for Europe/Paris
+const char* gmt_time_zone = "GMT0";
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;
 
 void setTimezone(String timezone){
   Serial.printf("  Setting Timezone to %s\n",timezone.c_str());
@@ -90,7 +94,7 @@ void initTime(String timezone){
     return;
   }
   Serial.println("  Got the time from NTP");
-  // Now we can set the real timezone
+  // Set timezone
   setTimezone(timezone);
 }
 
@@ -186,6 +190,40 @@ byte doubleUp[8] = {
   B01010,
 };
 
+void timeDiff(){
+  // Tests for time difference - NOT WORKING
+  
+  const char* localT1 = "Saturday, November 23 2024 21:30:38 zone CET +0100";
+  const char* utcT2 = "2024-11-23T20:28:55.000Z";
+
+  // Parse UTC time to time_t
+  struct tm tmUTC;
+  strptime(utcT2, "%Y-%m-%dT%H:%M:%S.000Z", &tmUTC);  // Parse UTC time
+  time_t tUTC = mktime(&tmUTC);  // Convert to time_t (UTC)
+  
+  // Print the UTC time for reference
+  Serial.print("UTC Time (t2): ");
+  Serial.println(ctime(&tUTC));
+
+  // Parse local time (localT1) to struct tm
+  struct tm tmLocal;
+  strptime(localT1, "%A, %B %d %Y %H:%M:%S zone", &tmLocal);  // Parse local time string
+  
+  // Convert local time to time_t by applying correct local timezone adjustment
+  time_t tLocal = mktime(&tmLocal);  // This handles the CET/CEST conversion automatically
+
+  // Print the local time (adjusted to UTC) for reference
+  Serial.print("Local Time (t1, adjusted to UTC): ");
+  Serial.println(ctime(&tLocal));
+
+  // Calculate the difference in minutes
+  double diff = difftime(tLocal, tUTC) / 60.0;  // Difference in seconds, converted to minutes
+  
+  // Print the difference in minutes
+  Serial.print("Difference in minutes: ");
+  Serial.println(diff);
+}
+
 
 void setup() {
 
@@ -239,8 +277,10 @@ void setup() {
     Serial.printf("[WiFiMulti] Unable to connect to wifi");
   }
   // timeClient.begin();
-  initTime(time_zone);
+  initTime(local_time_zone);
   printLocalTime();
+
+  timeDiff();
 }
 
 void loop() {
