@@ -3,8 +3,8 @@ Display NightScout data on 16x2 LCD screen connected to an ESP32
 
 Card profile in Arduino: ESP32 dev module
 
-### Wifi
-To connect to Wifi, create a secret.h file:
+### Wifi and NightScout config
+To configure, create a secret.h file:
 ```C
 // secrets.h file
 
