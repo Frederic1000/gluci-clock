@@ -1,10 +1,10 @@
 /**
  * ESP32_LCD_NightScout.ino
  *
- *  Version date: 2024-11-23
+ *  Version date: 2024-11-25
  *  
  *  For diabetics using a NightScout database
- *  Retrieve glycemia every 2 minutes
+ *  Retrieve glycemia every minute
  *  and display on a 16x2 LCD screen
  *
 */
@@ -41,30 +41,12 @@
 // wifi credentials, NightScout URL and API key
 #include "secrets.h"
 
-// Tests for time difference
-#include "time_diff.hpp"
-
-
 WiFiMulti wifiMulti;
 
 
 void setTimezone(char* timezone){
   Serial.printf("  Setting Timezone to %s\n",timezone);
   configTzTime(timezone, ntpServer1, ntpServer2);
-}
-
-
-void initTime(char* timezone){
-  struct tm timeinfo;
-  Serial.println("Setting up time");
-  configTime(0, 0, "pool.ntp.org");    // First connect to NTP server, with 0 TZ offset
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("  Failed to obtain time");
-    return;
-  }
-  Serial.println("  Got the time from NTP");
-  // Set timezone
-  setTimezone(timezone);
 }
 
 
@@ -81,31 +63,13 @@ struct tm getTzTime(char* timezone){
   return(timeinfo);
 }
 
+// time zone offset in minutes
+int tzOffsetMn = 0;
 
-void printLocalTime(){
-  configTzTime(local_time_zone, ntpServer1, ntpServer2);
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time 1");
-    return;
-  }
-  Serial.println("System time in local TZ: ");
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
-
+int getTzOffsetMn(char* timezone){
+  //TODO
+  return 60;
 }
-
-
-void printUtcTime(){
-  configTzTime(utc_time_zone, ntpServer1, ntpServer2);
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time 1");
-    return;
-  }
-  Serial.println("System time in UTC TZ  : ");
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
-}
-
 
 void setup() {
 
@@ -143,8 +107,8 @@ void setup() {
     Serial.println();
     Serial.printf("[WiFiMulti] Unable to connect to wifi");
   }
-  printLocalTime();
-  printUtcTime();
+
+  tzOffsetMn = getTzOffsetMn(local_time_zone);
 }
 
 void loop() {
@@ -154,8 +118,9 @@ void loop() {
     HTTPClient http;
 
     Serial.println();
+    
     Serial.println("[HTTP] begin...");
-    http.begin(NS_API_URL); // latest value
+    http.begin(NS_API_URL); // fetch latest value
     http.addHeader("API-SECRET", NS_API_SECRET);
     Serial.print("[HTTP] GET...\n");
     // start connection and send HTTP header
@@ -180,44 +145,68 @@ void loop() {
           Serial.println(error.f_str());
         } else {
           // Fetch values.
-          //
-          // Most of the time, you can rely on the implicit casts.
-          // In other case, you can do doc["time"].as<long>();
           const char* type = httpResponseBody[0]["type"];
           // Directions: Flat, FortyFiveUp, FortyFiveDown, SingleUp, SingleDown, DoubleUp, DoubleDown
           const char* direct = httpResponseBody[0]["direction"];
           // Glucose value
           long sgv = long(httpResponseBody[0]["sgv"]);
-          // sysTime of the measure, UTC
+          
+          // Time of the measure, UTC
           const char* sysTime = httpResponseBody[0]["sysTime"]; // UTC, measure
-          char measureTime_str[9];
-          strncpy(measureTime_str, sysTime + (12 - 1), 8); // UTC
-          measureTime_str[8] = '\0'; // end of chain
+
+          // Convert Glucose measure time UTC to time_t for time difference calc
+          struct tm tmMeasureTimeUTC;
+          strptime(sysTime, "%Y-%m-%dT%H:%M:%S.000Z", &tmMeasureTimeUTC);  // Parse UTC time
+          time_t tMeasureTimeUTC = mktime(&tmMeasureTimeUTC);  // Convert to time_t (UTC)
+
+          // Actual time local TZ for clock display
+          struct tm tmEpochTimeLocal = getTzTime(local_time_zone);
+          time_t tEpochTimeLocal = mktime(&tmEpochTimeLocal);
+          
+          char time_lcd[10];
+          strftime(time_lcd, 10, "%H:%M", &tmEpochTimeLocal);
+          char date_lcd[10];
+          strftime(date_lcd, 10, "%d %b", &tmEpochTimeLocal);
+          
+          Serial.print(time_lcd);
+          Serial.print("_");
+          Serial.print(date_lcd);
+          Serial.println("_local_TZ");
+
+          // Actual time UTC for calculation of elapsed time since measure
+          // TODO : calculate it by adding a UTCoffset
+          struct tm tmEpochTimeUTC = getTzTime(utc_time_zone);
+          time_t tEpochTimeUTC = mktime(&tmEpochTimeUTC);
+        
+        
+          // Calculate the elapsed time since glucose measure - in minutes
+          int elapsed_mn = round(difftime(tEpochTimeUTC, tMeasureTimeUTC) / 60.0);  // Difference in seconds, converted to minutes
+          
+          // Print the difference in minutes
+          Serial.print("Difference in minutes: ");
+          Serial.println(elapsed_mn);
 
         
-          // Display values
-          Serial.println(type);
-          Serial.println(direct);
-          Serial.println(sgv);
-          Serial.println(sysTime); // GMT of the measure
-          Serial.println(measureTime_str); // GMT of the measure
-          Serial.println("\n0123456789012345\n"); // New line before printing same message on serial than LCD
-          
+          // Display values as below
+          // 0123456789012345       LCD has 16 chars
+          //  18:05  |  113 u       time | sgv
+          // 25 Nov  |   1 mn       date | elapsed time since svg measure
+          Serial.println("\n0123456789012345");
+    
           if (strcmp(type, "sgv") == 0){
             lcd.clear();
-            if (sgv < 100){
-              lcd.setCursor(3,0);
-              Serial.print("__");
-            } else {
-              lcd.setCursor(2,0);
-              Serial.print("_");
-            }
-            lcd.print(sgv);
-            Serial.print(sgv);
-            // lcd.setCursor(6,0);
-            lcd.print (" mg/dL ");
-            Serial.print("_mg/dL_");
             
+            // first line: clock, glucose value, glucose evolution arrow
+            lcd.setCursor(1,0);
+            Serial.print(" ");
+            lcd.print(time_lcd);
+            Serial.print(time_lcd);
+
+            lcd.printf("  | %3d ", sgv);
+            Serial.printf("  | %3d ", sgv);
+
+            
+            // arrow for glucose evolution
             if(strcmp(direct, "Flat") == 0) {
               lcd.write(byte(0));
               Serial.print("f");
@@ -250,38 +239,19 @@ void loop() {
               lcd.print(direct);
               Serial.print(direct);
             }
-            lcd.setCursor(0,1);
-            Serial.println();
-            lcd.print("at ");
-            Serial.print("at_");
-            lcd.print(measureTime_str);
-            Serial.print(measureTime_str);
-            lcd.setCursor(11,1);
-            lcd.print(" UTC ");
-            Serial.print("_UTC_");
 
-
-
-
-            // Parse UTC time to time_t
-            struct tm tmMeasureTimeUTC;
-            strptime(sysTime, "%Y-%m-%dT%H:%M:%S.000Z", &tmMeasureTimeUTC);  // Parse UTC time
-            time_t tMeasureTimeUTC = mktime(&tmMeasureTimeUTC);  // Convert to time_t (UTC)
-          
             
-            struct tm tmEpochTimeUTC = getTzTime(local_time_zone);
-            time_t tEpochTimeUTC = mktime(&tmEpochTimeUTC);
+            // second line : date, delay since measure
+            lcd.setCursor(1,1);
+            Serial.print("\n ");
             
-            struct tm tmEpochTimeLocal = getTzTime(utc_time_zone);
-            time_t tEpochTimeLocal = mktime(&tmEpochTimeLocal);
-          
-          
-            // Calculate the difference in minutes
-            int diff = round(difftime(tEpochTimeUTC, tMeasureTimeUTC) / 60.0);  // Difference in seconds, converted to minutes
-            
-            // Print the difference in minutes
-            Serial.print("Difference in minutes: ");
-            Serial.println(diff);
+            lcd.print(date_lcd);
+            Serial.print(date_lcd);
+
+            lcd.printf(" | %3d mn", elapsed_mn);
+            Serial.printf(" | %3d mn", elapsed_mn);
+            //lcd.print("mn");
+            //Serial.print("mn");
             
           }
         }
@@ -292,8 +262,6 @@ void loop() {
 
     http.end();
   }
-
-  
   
   delay(1*60*1000); // in ms -> retrieve data and update every minute
 }
