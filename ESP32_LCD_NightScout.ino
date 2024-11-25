@@ -36,7 +36,7 @@
 
 #include <ArduinoJson.h>
 
-#include "lcd_16x2.h"
+#include "lcd_16x2.hpp"
 
 // wifi credentials, NightScout URL and API key
 #include "secrets.h"
