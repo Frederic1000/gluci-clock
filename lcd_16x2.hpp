@@ -1,6 +1,11 @@
 // Parameters for 16x2 LCD use with ESP32
 // and displaying arrows
 
+// to prevent this file being included more than once
+#ifndef lcd_16x2_hpp
+#define lcd_16x2_hpp
+
+
 #include <LiquidCrystal.h>
 
 /* 16x2 LCD wiring:
@@ -127,3 +132,5 @@ void initialize_LCD(){
   
   lcd.begin(16,2); // columns, rows of the LCD, zero index( 0-15, 0-1 )
 }
+
+#endif // lcd_16x2_hpp

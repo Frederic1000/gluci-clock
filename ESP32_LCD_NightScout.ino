@@ -68,6 +68,20 @@ void initTime(char* timezone){
 }
 
 
+struct tm getTzTime(char* timezone){
+  configTzTime(timezone, ntpServer1, ntpServer2);
+  struct tm timeinfo = {0};
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time 1");
+    return(timeinfo); // return {0} if error
+  }
+  Serial.print("System time in TZ: ");
+  Serial.println(timezone);
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
+  return(timeinfo);
+}
+
+
 void printLocalTime(){
   configTzTime(local_time_zone, ntpServer1, ntpServer2);
   struct tm timeinfo;
@@ -76,7 +90,8 @@ void printLocalTime(){
     return;
   }
   Serial.println("System time in local TZ: ");
-  Serial.print(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
+
 }
 
 
@@ -88,7 +103,7 @@ void printUtcTime(){
     return;
   }
   Serial.println("System time in UTC TZ  : ");
-  Serial.print(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
 }
 
 
@@ -128,11 +143,8 @@ void setup() {
     Serial.println();
     Serial.printf("[WiFiMulti] Unable to connect to wifi");
   }
-  // timeClient.begin();
-  // initTime(&local_time_zone);
   printLocalTime();
-
-  timeDiff();
+  printUtcTime();
 }
 
 void loop() {
@@ -174,12 +186,13 @@ void loop() {
           const char* type = httpResponseBody[0]["type"];
           // Directions: Flat, FortyFiveUp, FortyFiveDown, SingleUp, SingleDown, DoubleUp, DoubleDown
           const char* direct = httpResponseBody[0]["direction"];
+          // Glucose value
           long sgv = long(httpResponseBody[0]["sgv"]);
-          
-          const char* sysTime = httpResponseBody[0]["sysTime"]; // GMT
-          char measureTime[9];
-          strncpy(measureTime, sysTime + (12 - 1), 8); // GMT
-          measureTime[8] = '\0'; // end of chain
+          // sysTime of the measure, UTC
+          const char* sysTime = httpResponseBody[0]["sysTime"]; // UTC, measure
+          char measureTime_str[9];
+          strncpy(measureTime_str, sysTime + (12 - 1), 8); // UTC
+          measureTime_str[8] = '\0'; // end of chain
 
         
           // Display values
@@ -187,7 +200,7 @@ void loop() {
           Serial.println(direct);
           Serial.println(sgv);
           Serial.println(sysTime); // GMT of the measure
-          Serial.println(measureTime); // GMT of the measure
+          Serial.println(measureTime_str); // GMT of the measure
           Serial.println("\n0123456789012345\n"); // New line before printing same message on serial than LCD
           
           if (strcmp(type, "sgv") == 0){
@@ -241,11 +254,35 @@ void loop() {
             Serial.println();
             lcd.print("at ");
             Serial.print("at_");
-            lcd.print(measureTime);
-            Serial.print(measureTime);
+            lcd.print(measureTime_str);
+            Serial.print(measureTime_str);
             lcd.setCursor(11,1);
             lcd.print(" UTC ");
             Serial.print("_UTC_");
+
+
+
+
+            // Parse UTC time to time_t
+            struct tm tmMeasureTimeUTC;
+            strptime(sysTime, "%Y-%m-%dT%H:%M:%S.000Z", &tmMeasureTimeUTC);  // Parse UTC time
+            time_t tMeasureTimeUTC = mktime(&tmMeasureTimeUTC);  // Convert to time_t (UTC)
+          
+            
+            struct tm tmEpochTimeUTC = getTzTime(local_time_zone);
+            time_t tEpochTimeUTC = mktime(&tmEpochTimeUTC);
+            
+            struct tm tmEpochTimeLocal = getTzTime(utc_time_zone);
+            time_t tEpochTimeLocal = mktime(&tmEpochTimeLocal);
+          
+          
+            // Calculate the difference in minutes
+            int diff = round(difftime(tEpochTimeUTC, tMeasureTimeUTC) / 60.0);  // Difference in seconds, converted to minutes
+            
+            // Print the difference in minutes
+            Serial.print("Difference in minutes: ");
+            Serial.println(diff);
+            
           }
         }
       }
@@ -255,9 +292,8 @@ void loop() {
 
     http.end();
   }
+
   
-  // timeClient.update();
-  // Serial.println(timeClient.getFormattedTime());
   
-  delay(2*60*1000); // in ms -> retrieve data and update every 2 minutes
+  delay(1*60*1000); // in ms -> retrieve data and update every minute
 }
