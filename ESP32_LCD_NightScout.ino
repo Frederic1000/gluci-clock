@@ -49,26 +49,48 @@ void setTimezone(char* timezone){
   configTzTime(timezone, ntpServer1, ntpServer2);
 }
 
-
-struct tm getTzTime(char* timezone){
-  configTzTime(timezone, ntpServer1, ntpServer2);
+struct tm getTzTime(){
   struct tm timeinfo = {0};
   if(!getLocalTime(&timeinfo)){
     Serial.println("Failed to obtain time 1");
     return(timeinfo); // return {0} if error
   }
-  Serial.print("System time in TZ: ");
-  Serial.println(timezone);
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
+  Serial.print("System time: ");
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
   return(timeinfo);
 }
 
 // time zone offset in minutes
-int tzOffsetMn = 0;
+int tzOffset = 0; // UTC
 
-int getTzOffsetMn(char* timezone){
-  //TODO
-  return 60;
+int getTzOffset(char* timezone){
+
+  // set timezone to UTC
+  setTimezone(utc_time_zone); 
+  
+  // and get tm struct
+  struct tm tm_utc_now = getTzTime();
+  
+  // convert to time_t
+  time_t t_utc_now = mktime (&tm_utc_now);
+  
+  // set timezone to local
+  setTimezone(local_time_zone);
+
+  // convert time_t to tm struct
+  struct tm tm_local_now = *localtime(&t_utc_now);
+
+  // set timezone back to UTC
+  setTimezone(utc_time_zone);
+
+  // convert tm to time_t
+  time_t t_local_now = mktime (&tm_local_now);
+
+  // calculate difference between the two time_t, in seconds
+  int tzOffset = round(difftime(t_local_now, t_utc_now));
+  Serial.printf("\nTzOffset : %d\n", tzOffset);
+
+  return (tzOffset);
 }
 
 void setup() {
@@ -107,8 +129,11 @@ void setup() {
     Serial.println();
     Serial.printf("[WiFiMulti] Unable to connect to wifi");
   }
-
-  tzOffsetMn = getTzOffsetMn(local_time_zone);
+  // offset in seconds between local time and UTC
+  tzOffset = getTzOffset(local_time_zone);
+  
+  // set timezone to local
+  setTimezone(local_time_zone);
 }
 
 void loop() {
@@ -160,7 +185,7 @@ void loop() {
           time_t tMeasureTimeUTC = mktime(&tmMeasureTimeUTC);  // Convert to time_t (UTC)
 
           // Actual time local TZ for clock display
-          struct tm tmEpochTimeLocal = getTzTime(local_time_zone);
+          struct tm tmEpochTimeLocal = getTzTime();
           time_t tEpochTimeLocal = mktime(&tmEpochTimeLocal);
           
           char time_lcd[10];
@@ -174,13 +199,10 @@ void loop() {
           Serial.println("_local_TZ");
 
           // Actual time UTC for calculation of elapsed time since measure
-          // TODO : calculate it by adding a UTCoffset
-          struct tm tmEpochTimeUTC = getTzTime(utc_time_zone);
-          time_t tEpochTimeUTC = mktime(&tmEpochTimeUTC);
-        
+          time_t tEpochTimeUTC = tEpochTimeLocal - tzOffset;
         
           // Calculate the elapsed time since glucose measure - in minutes
-          int elapsed_mn = round(difftime(tEpochTimeUTC, tMeasureTimeUTC) / 60.0);  // Difference in seconds, converted to minutes
+          int elapsed_mn = round(difftime(tEpochTimeUTC, tMeasureTimeUTC) / 60.0);
           
           // Print the difference in minutes
           Serial.print("Difference in minutes: ");
@@ -250,9 +272,6 @@ void loop() {
 
             lcd.printf(" | %3d mn", elapsed_mn);
             Serial.printf(" | %3d mn", elapsed_mn);
-            //lcd.print("mn");
-            //Serial.print("mn");
-            
           }
         }
       }
