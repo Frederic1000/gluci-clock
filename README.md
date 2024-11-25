@@ -64,24 +64,24 @@ Cost: 10 €
 
 #### Wiring
 
-   16x2 LCD pins (right to left) - ESP32 pins
-   __________________________________________
-   1 GND supply                  - GND
-   2 VDD 5v                      - 5V
-   3 Vo contrast adjustment      - 16 (PWM)
-   4 RS register select          - 22
-   5 R/W read/write              - GND
-   6 En Enable Signal            - 21
-   7 DB0 Data Bit 0              - unused
-   8 DB1 Data Bit 1              - unused
-   9 DB2 Data Bit 2              - unused
-  10 DB3 Data Bit 3              - unused
-  11 DB4 Data Bit 4              -  5
-  12 DB5 Data Bit 5              - 18
-  13 DB6 Data Bit 6              - 23
-  14 DB7 Data Bit 7              - 19
-  15 +5V backlight optional      (16 pins LCDs)
-  16 GND backlight optional      (16 pins LCDs)
+| 16x2 LCD pins (right to left) |  ESP32 pins  |
+| ----------------------------- | ------------ |
+| 1 GND supply                  |     GND      |
+| 2 VDD 5v                      |      5V      |
+| 3 Vo contrast adjustment      |   16 (PWM)   |
+| 4 RS register select          |      22      |
+| 5 R/W read/write              |     GND      |
+| 6 En Enable Signal            |      21      |
+| 7 DB0 Data Bit 0              |    unused    |
+| 8 DB1 Data Bit 1              |    unused    |
+| 9 DB2 Data Bit 2              |    unused    |
+|10 DB3 Data Bit 3              |    unused    |
+|11 DB4 Data Bit 4              |       5      |
+|12 DB5 Data Bit 5              |      18      |
+|13 DB6 Data Bit 6              |      23      |
+|14 DB7 Data Bit 7              |      19      |
+|15 +5V backlight optional      |(16 pins LCDs)|
+|16 GND backlight optional      |(16 pins LCDs)|
 
 
 ### Development environment
