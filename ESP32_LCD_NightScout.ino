@@ -32,60 +32,29 @@
 #include <WiFiMulti.h>
 #include <HTTPClient.h>
 
-// Internet time
-// #include <NTPClient.h>
-// #include <WiFiUdp.h>
-
 #include <time.h>
 
 #include <ArduinoJson.h>
 
-#include <LiquidCrystal.h>
+#include "lcd_16x2.h"
 
 // wifi credentials, NightScout URL and API key
 #include "secrets.h"
 
+// Tests for time difference
+#include "time_diff.hpp"
+
+
 WiFiMulti wifiMulti;
 
-// WiFiUDP ntpUDP;
-// NTPClient timeClient(ntpUDP);
 
-
-/* 16x2 LCD
-   LCD pins (right to left) - ESP32 pins
-   1 GND supply             - GND
-   2 VDD 5v                 - 5V
-   3 Vo contrast adjustment - 16 (PWM)
-   4 RS register select     - 22
-   5 R/W read/write         - GND
-   6 En Enable Signal       - 21
-   7 DB0 Data Bit 0         - unused
-   8 DB1 Data Bit 1         - unused
-   9 DB2 Data Bit 2         - unused
-  10 DB3 Data Bit 3         - unused
-  11 DB4 Data Bit 4         -  5
-  12 DB5 Data Bit 5         - 18
-  13 DB6 Data Bit 6         - 23
-  14 DB7 Data Bit 7         - 19
-  15 +5V backlight optional (16 pins LCDs)
-  16 GND backlight optional (16 pins LCDs)
-*/
-
-// Time zone for local time and daylight saving
-// list here:
-// https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char* local_time_zone = "CET-1CEST,M3.5.0,M10.5.0/3"; // set for Europe/Paris
-const char* gmt_time_zone = "GMT0";
-const long  gmtOffset_sec = 3600;
-const int   daylightOffset_sec = 3600;
-
-void setTimezone(String timezone){
-  Serial.printf("  Setting Timezone to %s\n",timezone.c_str());
-  setenv("TZ",timezone.c_str(),1);  //  Now adjust the TZ.  Clock settings are adjusted to show the new local time
-  tzset();
+void setTimezone(char* timezone){
+  Serial.printf("  Setting Timezone to %s\n",timezone);
+  configTzTime(timezone, ntpServer1, ntpServer2);
 }
 
-void initTime(String timezone){
+
+void initTime(char* timezone){
   struct tm timeinfo;
   Serial.println("Setting up time");
   configTime(0, 0, "pool.ntp.org");    // First connect to NTP server, with 0 TZ offset
@@ -98,130 +67,28 @@ void initTime(String timezone){
   setTimezone(timezone);
 }
 
+
 void printLocalTime(){
+  configTzTime(local_time_zone, ntpServer1, ntpServer2);
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
     Serial.println("Failed to obtain time 1");
     return;
   }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
+  Serial.println("System time in local TZ: ");
+  Serial.print(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
 }
 
 
-// PWM configuration for LCD contrast
-const int pwmChannel = 0;   //Channel for PWM (0-15)
-const int frequency = 1000; // PWM frequency 1 KHz
-const int resolution = 8;   // PWM resolution 8 bits, 256 possible values
-const int pwmPin = 16;
-const int contrast = 75;    // 0-255
-
-// 16x2 LCD
-const int rs = 22, en = 21, d4 = 5, d5 = 18, d6 = 23, d7 = 19;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
-// Arrows for glucose tendency: Flat; FortyFiveDown, SingleDown, DoubleDown, FortyFiveUp, SingleUp, DoubleUp
-byte flat[8] = {
-  B00000,
-  B00100,
-  B00010,
-  B11111,
-  B00010,
-  B00100,
-  B00000,
-};
-
-byte fourtyFiveDown[8] = {
-  B00000,
-  B10000,
-  B01001,
-  B00101,
-  B00011,
-  B01111,
-  B00000,
-};
-
-byte singleDown[8] = {
-  B00100,
-  B00100,
-  B00100,
-  B00100,
-  B10101,
-  B01110,
-  B00100,
-};
-
-byte doubleDown[8] = {
-  B01010,
-  B01010,
-  B01010,
-  B01010,
-  B10001,
-  B01010,
-  B00100,
-};
-
-byte fourtyFiveUp[8] = {
-  B00000,
-  B01111,
-  B00011,
-  B00101,
-  B01001,
-  B10000,
-  B00000,
-};
-
-byte singleUp[8] = {
-  B00100,
-  B01110,
-  B10101,
-  B00100,
-  B00100,
-  B00100,
-  B00100,
-};
-
-byte doubleUp[8] = {
-  B00100,
-  B01010,
-  B10001,
-  B01010,
-  B01010,
-  B01010,
-  B01010,
-};
-
-void timeDiff(){
-  // Tests for time difference - NOT WORKING
-  
-  const char* localT1 = "Saturday, November 23 2024 21:30:38 zone CET +0100";
-  const char* utcT2 = "2024-11-23T20:28:55.000Z";
-
-  // Parse UTC time to time_t
-  struct tm tmUTC;
-  strptime(utcT2, "%Y-%m-%dT%H:%M:%S.000Z", &tmUTC);  // Parse UTC time
-  time_t tUTC = mktime(&tmUTC);  // Convert to time_t (UTC)
-  
-  // Print the UTC time for reference
-  Serial.print("UTC Time (t2): ");
-  Serial.println(ctime(&tUTC));
-
-  // Parse local time (localT1) to struct tm
-  struct tm tmLocal;
-  strptime(localT1, "%A, %B %d %Y %H:%M:%S zone", &tmLocal);  // Parse local time string
-  
-  // Convert local time to time_t by applying correct local timezone adjustment
-  time_t tLocal = mktime(&tmLocal);  // This handles the CET/CEST conversion automatically
-
-  // Print the local time (adjusted to UTC) for reference
-  Serial.print("Local Time (t1, adjusted to UTC): ");
-  Serial.println(ctime(&tLocal));
-
-  // Calculate the difference in minutes
-  double diff = difftime(tLocal, tUTC) / 60.0;  // Difference in seconds, converted to minutes
-  
-  // Print the difference in minutes
-  Serial.print("Difference in minutes: ");
-  Serial.println(diff);
+void printUtcTime(){
+  configTzTime(utc_time_zone, ntpServer1, ntpServer2);
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time 1");
+    return;
+  }
+  Serial.println("System time in UTC TZ  : ");
+  Serial.print(&timeinfo, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
 }
 
 
@@ -234,22 +101,7 @@ void setup() {
   Serial.println("ESP start");
 
   // Initialize display
-  Serial.println();
-  Serial.println("[DISPLAY] Initializing LCD");
-  // LCD Contrast
-  ledcSetup(pwmChannel, frequency, resolution);
-  ledcAttachPin(pwmPin, pwmChannel);
-  ledcWrite(pwmChannel, contrast);
-  //LCD arrows
-  lcd.createChar(0, flat);
-  lcd.createChar(1, fourtyFiveDown);
-  lcd.createChar(2, singleDown);
-  lcd.createChar(3, doubleDown);
-  lcd.createChar(4, fourtyFiveUp);
-  lcd.createChar(5, singleUp);
-  lcd.createChar(6, doubleUp);
-  
-  lcd.begin(16,2); // columns, rows of the LCD, zero index( 0-15, 0-1 )
+  initialize_LCD();
 
   lcd.clear();
   lcd.setCursor(0,0); // first line
@@ -277,7 +129,7 @@ void setup() {
     Serial.printf("[WiFiMulti] Unable to connect to wifi");
   }
   // timeClient.begin();
-  initTime(local_time_zone);
+  // initTime(&local_time_zone);
   printLocalTime();
 
   timeDiff();
