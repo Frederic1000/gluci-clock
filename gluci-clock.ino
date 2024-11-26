@@ -1,7 +1,7 @@
 /**
  * ESP32_LCD_NightScout.ino
  *
- *  Version date: 2024-11-25
+ *  Version date: 2024-11-26
  *  
  *  For diabetics using a NightScout database
  *  Retrieve glycemia every minute
@@ -36,6 +36,7 @@
 
 #include <ArduinoJson.h>
 
+// Constants and function to display glycemia on LCD
 #include "lcd_16x2.hpp"
 
 // wifi credentials, NightScout URL and API key
@@ -43,16 +44,22 @@
 
 WiFiMulti wifiMulti;
 
-
+/**
+ * Set the timezone
+ */
 void setTimezone(char* timezone){
   Serial.printf("  Setting Timezone to %s\n",timezone);
   configTzTime(timezone, ntpServer1, ntpServer2);
 }
 
-struct tm getTzTime(){
+/**
+ * Get time from internal clock
+ * returns time for the timezone defined by setTimezone(char* timezone)
+ */
+struct tm getActualTzTime(){
   struct tm timeinfo = {0};
   if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time 1");
+    Serial.println("Failed to obtain time!");
     return(timeinfo); // return {0} if error
   }
   Serial.print("System time: ");
@@ -60,16 +67,19 @@ struct tm getTzTime(){
   return(timeinfo);
 }
 
-// time zone offset in minutes
-int tzOffset = 0; // UTC
+// time zone offset in minutes, initialized to UTC
+int tzOffset = 0;
 
+/**
+ * Returns the offset in seconds between local time and UTC
+ */
 int getTzOffset(char* timezone){
 
   // set timezone to UTC
   setTimezone(utc_time_zone); 
   
   // and get tm struct
-  struct tm tm_utc_now = getTzTime();
+  struct tm tm_utc_now = getActualTzTime();
   
   // convert to time_t
   time_t t_utc_now = mktime (&tm_utc_now);
@@ -93,6 +103,12 @@ int getTzOffset(char* timezone){
   return (tzOffset);
 }
 
+/**
+ * Setup : 
+ * - initialize LCD, 
+ * - connect to wifi, 
+ * - evaluate offset between local time and UTC
+ */
 void setup() {
 
   Serial.begin(115200);
@@ -120,14 +136,12 @@ void setup() {
   }
 
   if((wifiMulti.run() == WL_CONNECTED)) {
-    Serial.println();
-    Serial.print("[WiFiMulti] Connected to: ");
+    Serial.print("\n[WiFiMulti] Connected to: ");
     Serial.print(WiFi.SSID());
     Serial.print(" IP: ");
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println();
-    Serial.printf("[WiFiMulti] Unable to connect to wifi");
+    Serial.print("\n[WiFiMulti] Unable to connect to wifi");
   }
   // offset in seconds between local time and UTC
   tzOffset = getTzOffset(local_time_zone);
@@ -136,18 +150,28 @@ void setup() {
   setTimezone(local_time_zone);
 }
 
+/**
+ * Connect to wifi
+ * Retrieve glucose data from NightScout server and parse it to Json
+ * Calculate delay between glucose measure and actual time
+ * get arrow for display of glucose evolution on LCD
+ * Display on LCD: 
+ * - clock (date and HH:M), 
+ * - glucose value, 
+ * - evolution as an arrow, 
+ * - delay since measure
+ */
 void loop() {
   // wait for WiFi connection
   if((wifiMulti.run() == WL_CONNECTED)) {
-      
-    HTTPClient http;
 
-    Serial.println();
-    
-    Serial.println("[HTTP] begin...");
+    // Retrieve glucose data from NightScout Server
+    HTTPClient http;
+    Serial.println("\n[HTTP] begin...");
     http.begin(NS_API_URL); // fetch latest value
     http.addHeader("API-SECRET", NS_API_SECRET);
     Serial.print("[HTTP] GET...\n");
+    
     // start connection and send HTTP header
     int httpCode = http.GET();   
     // httpCode will be negative on error
@@ -155,64 +179,66 @@ void loop() {
       // HTTP header has been send and Server response header has been handled
       Serial.printf("[HTTP] GET... code: %d\n", httpCode);
 
-      // file found at server
+      // NightScout data received from server
       if(httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
         Serial.println(payload);
 
-        // parse Json response
-        StaticJsonDocument<500> httpResponseBody; // buffer size for Json parser
+        // parse NightScour data Json response
+        // buffer for Json parser
+        StaticJsonDocument<500> httpResponseBody;
         DeserializationError error = deserializeJson(httpResponseBody, payload);
-        // Test if parsing succeeds.
+        
+        // Test if parsing NightScout data succeeded
         if (error) {
           Serial.println();
           Serial.print(F("deserializeJson() failed: "));
           Serial.println(error.f_str());
-        } else {
-          // Fetch values.
+        } 
+        else {
+          // Get glucose values
+          
+          // Type must be "sgv" (skin glucose value)
           const char* type = httpResponseBody[0]["type"];
-          // Directions: Flat, FortyFiveUp, FortyFiveDown, SingleUp, SingleDown, DoubleUp, DoubleDown
+          
+          // Directions: 
+          // Flat, FortyFiveUp, FortyFiveDown, SingleUp, SingleDown, DoubleUp, DoubleDown
           const char* direct = httpResponseBody[0]["direction"];
+          
           // Glucose value
           long sgv = long(httpResponseBody[0]["sgv"]);
           
-          // Time of the measure, UTC
-          const char* sysTime = httpResponseBody[0]["sysTime"]; // UTC, measure
+          // Time of the measure, returned in UTC timezone in Nightscout Json
+          const char* strMeasureTime = httpResponseBody[0]["sysTime"];
 
           // Convert Glucose measure time UTC to time_t for time difference calc
+          // Parse UTC time to tm_time structure
           struct tm tmMeasureTimeUTC;
-          strptime(sysTime, "%Y-%m-%dT%H:%M:%S.000Z", &tmMeasureTimeUTC);  // Parse UTC time
-          time_t tMeasureTimeUTC = mktime(&tmMeasureTimeUTC);  // Convert to time_t (UTC)
+          strptime(strMeasureTime, "%Y-%m-%dT%H:%M:%S.000Z", &tmMeasureTimeUTC);
+          // Convert UTC measure time to time_t (seconds since epoch)
+          time_t tMeasureTimeUTC = mktime(&tmMeasureTimeUTC);
 
           // Actual time local TZ for clock display
-          struct tm tmEpochTimeLocal = getTzTime();
-          time_t tEpochTimeLocal = mktime(&tmEpochTimeLocal);
-          
-          char time_lcd[10];
-          strftime(time_lcd, 10, "%H:%M", &tmEpochTimeLocal);
-          char date_lcd[10];
-          strftime(date_lcd, 10, "%d %b", &tmEpochTimeLocal);
-          
-          Serial.print(time_lcd);
-          Serial.print("_");
-          Serial.print(date_lcd);
-          Serial.println("_local_TZ");
+          struct tm tmActualTimeLocal = getActualTzTime();
+          time_t tActualTimeLocal = mktime(&tmActualTimeLocal);
 
-          // Actual time UTC for calculation of elapsed time since measure
-          time_t tEpochTimeUTC = tEpochTimeLocal - tzOffset;
+          // prepare LCD clock display: "HH:MM", "dd Mmm"
+          char time_lcd[10];
+          strftime(time_lcd, 10, "%H:%M", &tmActualTimeLocal);
+          char date_lcd[10];
+          strftime(date_lcd, 10, "%d %b", &tmActualTimeLocal);
+          
+          // Actual time UTC as time_t for calculation of elapsed time since measure
+          time_t tActualTimeUTC = tActualTimeLocal - tzOffset;
         
           // Calculate the elapsed time since glucose measure - in minutes
-          int elapsed_mn = round(difftime(tEpochTimeUTC, tMeasureTimeUTC) / 60.0);
-          
-          // Print the difference in minutes
-          Serial.print("Difference in minutes: ");
-          Serial.println(elapsed_mn);
+          int elapsed_mn = round(difftime(tActualTimeUTC, tMeasureTimeUTC) / 60.0);
 
-        
           // Display values as below
           // 0123456789012345       LCD has 16 chars
           //  18:05  |  113 u       time | sgv
           // 25 Nov  |   1 mn       date | elapsed time since svg measure
+          
           Serial.println("\n0123456789012345");
     
           if (strcmp(type, "sgv") == 0){
@@ -281,6 +307,7 @@ void loop() {
 
     http.end();
   }
-  
-  delay(1*60*1000); // in ms -> retrieve data and update every minute
+
+  // in ms -> retrieve data and update every minute
+  delay(1*60*1000);
 }
