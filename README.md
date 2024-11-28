@@ -1,7 +1,9 @@
-# ESP32-LCD-NightScout
-Display NightScout data on 16x2 LCD screen connected to an ESP32
+# Gluci-clock
+For diabetics using a Continuous Glucose Monitor and using a NightScout database.
+This project will allow displaying NightScout data on 16x2 LCD screen connected to an ESP32.
+Day and time are also displayed on the LCD.
 
-Card profile in Arduino: ESP32 dev module
+This will make a very affordable clock displaying glucose level and evolution.
 
 ### Wifi and NightScout config
 To configure, create a secret.h file:
@@ -44,27 +46,23 @@ const char* utc_time_zone = "GMT0";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
 ```
-Don't foreget to add this ```secrets.h``` file in ```.gitignore``` file.
+Don't foreget to add this ```secrets.h``` file in ```.gitignore``` file, never share it on GitHub.
 
 ### Materials needed:
 
 #### ESP32 development module:
 
-AZDelivery ESP32 NodeMCU module WLAN Wifi Dev Kit C (with CP 2102)
-
+AZDelivery ESP32 NodeMCU module WLAN Wifi Dev Kit C (with CP 2102).
 https://amzn.eu/d/8uNnGYs
-
-Cost: 10 €
 
 You might need to press Boot button to flash your board.
 
-#### LCD screen: I used an old screen from my DIY box...
-
-????
+#### LCD screen:
+I used an old screen from my DIY box...
 
 #### Cables
 
-#### Wiring
+#### Wiring between ESP32 and LCD:
 
 | 16x2 LCD pins (right to left) |  ESP32 pins  |
 | ----------------------------- | ------------ |
@@ -86,12 +84,10 @@ You might need to press Boot button to flash your board.
 |16 GND backlight optional      |(16 pins LCDs)|
 
 
-### Development environment
+### Development environment:
 Arduino IDE version 1.8.19
 
-Card: ESP32 dev module
-
-https://github.com/espressif/arduino-esp32
+Card: ESP32 dev module. https://github.com/espressif/arduino-esp32
 
 Upload speed: 921600
 
@@ -119,7 +115,7 @@ JTAG Adapter: disabled
 
 Programmer: Esptool
 
-### Dependencies
+### Dependencies: libraries used
 ArduinoJson-6.21.5 https://www.arduino.cc/reference/en/libraries/arduinojson/
 
 LiquidCrystal 1.0.7 https://www.arduino.cc/reference/en/libraries/liquidcrystal/
