@@ -122,9 +122,9 @@ void setup() {
 
   lcd.clear();
   lcd.setCursor(0,0); // first line
-  lcd.print("NightScout to");
+  lcd.print("    Gluci");
   lcd.setCursor(0,1); // second line
-  lcd.print("ESP32 with LCD");
+  lcd.print("         Clock");
 
   // Connect to Wifi
   for (int i = 0; i < sizeof(WIFI_CREDENTIALS) / sizeof(wifi_cred); i++) {

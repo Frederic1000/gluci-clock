@@ -56,7 +56,7 @@ https://amzn.eu/d/8uNnGYs
 
 Cost: 10 €
 
-No need to press any button to flash this board.
+You might need to press Boot button to flash your board.
 
 #### LCD screen: I used an old screen from my DIY box...
 
