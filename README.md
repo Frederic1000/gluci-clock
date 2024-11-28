@@ -6,7 +6,8 @@ Day and time are also displayed on the LCD.
 
 This will make a very affordable clock displaying glucose level and evolution.
 
-### Wifi and NightScout config
+### Setup
+#### Configuring Wifi, NightScout and timezone
 To configure, create a secret.h file:
 ```C
 // secrets.h file
@@ -49,6 +50,8 @@ const int   daylightOffset_sec = 3600;
 ```
 Don't foreget to add this ```secrets.h``` file in ```.gitignore``` file, never share it on GitHub.
 
+#### Install card and libraries in Arduino IDE, compile code and flash card. Connect the LCD as instructed below.
+
 ### Materials needed:
 
 #### ESP32 development module:
@@ -58,12 +61,12 @@ https://amzn.eu/d/8uNnGYs
 
 You might need to press Boot button to flash your board.
 
-#### LCD screen:
+#### 16x2 LCD screen:
 I used an old screen from my DIY box...
 
 #### Cables
 
-#### Wiring between ESP32 and LCD:
+### Wiring between ESP32 and LCD:
 
 | 16x2 LCD pins (right to left) |  ESP32 pins  |
 | ----------------------------- | ------------ |
