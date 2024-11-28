@@ -1,4 +1,5 @@
 # Gluci-clock
+![Gluci-clock prototype photo](static/gluci-clock.jpg)
 For diabetics using a Continuous Glucose Monitor and a NightScout database.
 This project will allow displaying NightScout data on 16x2 LCD screen connected to an ESP32.
 Day and time are also displayed on the LCD.
