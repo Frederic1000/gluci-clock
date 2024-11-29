@@ -73,6 +73,8 @@ I used an old screen from my DIY box...
 
 ### Wiring between ESP32 and LCD:
 
+The LCD used in this diagram is a 14 pins without backlight. More common ones are 16 pins with backlight, pins order may then be reversed.
+
 | 16x2 LCD pins (right to left) |  ESP32 pins  |
 | ----------------------------- | ------------ |
 | 1 GND supply                  |     GND      |
@@ -92,6 +94,7 @@ I used an old screen from my DIY box...
 |15 +5V backlight optional      |(16 pins LCDs)|
 |16 GND backlight optional      |(16 pins LCDs)|
 
+![ESP32 with LCD 16x2 wiring diagram](static/esp32-sc1602lcd.jpg)
 
 ### Development environment:
 Arduino IDE version 1.8.19
