@@ -35,7 +35,7 @@ const int pwmChannel = 0;   //Channel for PWM (0-15)
 const int frequency = 1000; // PWM frequency 1 KHz
 const int resolution = 8;   // PWM resolution 8 bits, 256 possible values
 const int pwmPin = 16;
-const int contrast = 75;    // 0-255
+// const int contrast = 75;          // 0-255 - defined in secrets.h
 
 
 // 16x2 LCD
@@ -114,7 +114,7 @@ byte doubleUp[8] = {
   B01010,
 };
 
-void initialize_LCD(){
+void initialize_LCD(int contrast){
   Serial.println();
   Serial.println("[DISPLAY] Initializing LCD");
   // LCD Contrast
