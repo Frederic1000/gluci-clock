@@ -39,7 +39,7 @@
 // Constants and function to display glycemia on LCD
 #include "lcd_16x2.hpp"
 
-// wifi credentials, NightScout URL and API key
+// wifi credentials, NightScout URL and API key, contrast for LCD
 #include "secrets.h"
 
 WiFiMulti wifiMulti;
@@ -118,7 +118,7 @@ void setup() {
   Serial.println("ESP start");
 
   // Initialize display
-  initialize_LCD();
+  initialize_LCD(contrast);
 
   lcd.clear();
   lcd.setCursor(0,0); // first line
