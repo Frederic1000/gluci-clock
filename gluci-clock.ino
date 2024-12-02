@@ -211,6 +211,7 @@ bool loadConfigFile()
   else
   {
     Serial.println("failed to mount FS");
+    // SPIFFS.format();
   }
   //end read
   return false;
@@ -371,11 +372,11 @@ void setup() {
   // Custom parameters here
   wm.setTitle("Gluci-clock");
 
-  // show/hide OTA upload button on info page
-  // To be done
+  // Set cutom menu via menu[] or vector
+  // const char* menu[] = {"wifi", "wifinoscan", "info", "param", "close", "sep", "erase", "restart", "exit", "erase", "update", "sep"};
+  const char* wmMenu[] = {"param", "wifi", "close", "sep", "restart", "exit"};
+  wm.setMenu (wmMenu, 6); // custom menu array must provide length
 
-  // Rename configuration button
-  /// To be done
 
   //--- additional Configs params ---
 
@@ -440,6 +441,11 @@ void setup() {
   if (forceConfig)
   {
     Serial.println("forceconfig = True");
+    lcd.clear();
+    lcd.setCursor(0,0); // first line
+    lcd.print("Wifi:Gluci-clock");
+    lcd.setCursor(0,1); // second line
+    lcd.print("clock123");
     if (!wm.startConfigPortal("Gluci-clock", "clock123"))
     {
       Serial.print("shouldSaveConfig: ");
@@ -456,6 +462,10 @@ void setup() {
   else
   {
     Serial.println("Running wm.autoconnect");
+    lcd.setCursor(0,0); // first line
+    lcd.print("Wifi:Gluci-clock");
+    lcd.setCursor(0,1); // second line
+    lcd.print("clock123");
     if (!wm.autoConnect("Gluci-clock", "clock123"))
     {
       Serial.println("failed to connect AC and hit timeout");
