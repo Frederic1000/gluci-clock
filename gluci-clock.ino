@@ -229,6 +229,32 @@ void saveConfigCallback()
 
 WiFiManager wm;
 
+//String getDefaultPassword() {
+//    String defaultApName = wm.getDefaultAPName();
+//    int len = defaultApName.length();
+//    if (len <= 8) {
+//        return defaultApName; // If the string is 8 characters or shorter, return the whole string
+//    }
+//    return defaultApName.substring(len - 8); // Return the last 8 characters
+//}
+
+
+// default password for Access Point, made from macID
+char * getDefaultPassword(){
+  // example:
+  // const char * password = getDefaultPassword();
+
+  // source for chipId: Espressif library example ChipId
+  uint32_t chipId = 0;
+  for (int i = 0; i < 17; i = i + 8) {
+    chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+  }
+
+  static char pw[9]; // with +1 char for end of chain
+  sprintf(pw, "%08d", chipId);
+  return pw;
+}
+const char * apPassword = getDefaultPassword();
 
 //callback notifying us of the need to save parameters
 void saveParamsCallback()
@@ -244,9 +270,16 @@ void configModeCallback(WiFiManager *myWiFiManager)
 {
   Serial.println("Entered Conf Mode");
 
+  lcd.clear();
+  lcd.setCursor(0,0); // first line
+  lcd.print("Wifi:Gluci-clock");
+  lcd.setCursor(0,1); // second line
+  lcd.print(apPassword);
+
   Serial.print("Config SSID: ");
   Serial.println(myWiFiManager->getConfigPortalSSID());
-
+  Serial.print("Config password: ");
+  Serial.println(apPassword);
   Serial.print("Config IP Address: ");
   Serial.println(WiFi.softAPIP());
 }
@@ -363,7 +396,7 @@ void setup() {
 
   //wm.resetSettings(); // wipe settings
   
-  //set config save notify callback
+  //set callbacks
   wm.setSaveConfigCallback(saveConfigCallback);
   wm.setSaveParamsCallback(saveParamsCallback);
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
@@ -374,8 +407,8 @@ void setup() {
 
   // Set cutom menu via menu[] or vector
   // const char* menu[] = {"wifi", "wifinoscan", "info", "param", "close", "sep", "erase", "restart", "exit", "erase", "update", "sep"};
-  const char* wmMenu[] = {"param", "wifi", "close", "sep", "restart", "exit"};
-  wm.setMenu (wmMenu, 6); // custom menu array must provide length
+  const char* wmMenu[] = {"param", "wifi", "close", "sep", "info", "restart", "exit"};
+  wm.setMenu (wmMenu, 7); // custom menu array must provide length
 
 
   //--- additional Configs params ---
@@ -441,12 +474,12 @@ void setup() {
   if (forceConfig)
   {
     Serial.println("forceconfig = True");
-    lcd.clear();
-    lcd.setCursor(0,0); // first line
-    lcd.print("Wifi:Gluci-clock");
-    lcd.setCursor(0,1); // second line
-    lcd.print("clock123");
-    if (!wm.startConfigPortal("Gluci-clock", "clock123"))
+//    lcd.clear();
+//    lcd.setCursor(0,0); // first line
+//    lcd.print("Wifi:Gluci-clock");
+//    lcd.setCursor(0,1); // second line
+//    lcd.print("clock123");
+    if (!wm.startConfigPortal("Gluci-clock", apPassword))
     {
       Serial.print("shouldSaveConfig: ");
       Serial.println(shouldSaveConfig);
@@ -462,11 +495,12 @@ void setup() {
   else
   {
     Serial.println("Running wm.autoconnect");
-    lcd.setCursor(0,0); // first line
-    lcd.print("Wifi:Gluci-clock");
-    lcd.setCursor(0,1); // second line
-    lcd.print("clock123");
-    if (!wm.autoConnect("Gluci-clock", "clock123"))
+//    lcd.setCursor(0,0); // first line
+//    lcd.clear();
+//    lcd.print("Wifi:Gluci-clock");
+//    lcd.setCursor(0,1); // second line
+//    lcd.print("clock123");
+    if (!wm.autoConnect("Gluci-clock",  apPassword))
     {
       Serial.println("failed to connect AC and hit timeout");
       delay(3000);
