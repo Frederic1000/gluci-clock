@@ -229,14 +229,6 @@ void saveConfigCallback()
 
 WiFiManager wm;
 
-//String getDefaultPassword() {
-//    String defaultApName = wm.getDefaultAPName();
-//    int len = defaultApName.length();
-//    if (len <= 8) {
-//        return defaultApName; // If the string is 8 characters or shorter, return the whole string
-//    }
-//    return defaultApName.substring(len - 8); // Return the last 8 characters
-//}
 
 
 // default password for Access Point, made from macID
@@ -249,7 +241,7 @@ char * getDefaultPassword(){
   for (int i = 0; i < 17; i = i + 8) {
     chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
-
+  chipId = chipId % 100000000;
   static char pw[9]; // with +1 char for end of chain
   sprintf(pw, "%08d", chipId);
   return pw;
