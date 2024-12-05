@@ -1,79 +1,50 @@
-# Gluci-clock
-![Gluci-clock prototype photo](static/gluci-clock.jpg)
-For diabetics using a Continuous Glucose Monitor and a NightScout database.
-This project will allow displaying NightScout data on 16x2 LCD screen connected to an ESP32.
-
-Information displayed on the screen:
-- Glucose level
-- Glucose evolution tendency
-- Number of minutes since the last measure
-- Day and time
-
-This will make a very affordable clock displaying glucose level and evolution.
-
-### Setup
-#### Configuring Wifi, NightScout and timezone
-To configure, create a secret.h file:
-```C
-// secrets.h file
-
-// Wifi credentials for secured or open networks
-
-struct wifi_cred {
-  const char *ssid;
-  const char *password;
-};
-
-const wifi_cred WIFI_CREDENTIALS[] = {
-  {"wifi_ssid1", "wifi_pw1"},
-  {"wifi_ssid2", "wifi_pw2"},
-  {"wifi_ssid3"},
-};
+# ESP32-LCD-NightScout
+Display NightScout data on 16x2 LCD screen connected to an ESP32
 
 
-// url and API key for Nightscout
+### ESP32 flashing and setup
 
-// Don't foreget to add '?count=1' to the URL
-const char *NS_API_URL = "https://your-nightscout-site/api/v1/entries.json?count=1"
+Download the code on GitHub.
 
-// key defined in NS > Hamburger menu > Admin tools
-// with API READ rights
-const char *NS_API_SECRET = "your-API-secret or token";
+Install and select the "ESP32 dev module" board in Arduino.
 
+Install the libraries:
+- ArduinoJson-6.21.5 https://www.arduino.cc/reference/en/libraries/arduinojson/
 
-// Parameters for time NTP server
-const char* ntpServer1 = "pool.ntp.org";
-const char* ntpServer2 = "time.nist.gov";
+- LiquidCrystal 1.0.7 https://www.arduino.cc/reference/en/libraries/liquidcrystal/
 
-// Time zone for local time and daylight saving
-// list here:
-// https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char* local_time_zone = "CET-1CEST,M3.5.0,M10.5.0/3"; // set for Europe/Paris
-const char* utc_time_zone = "GMT0";
-const long  gmtOffset_sec = 3600;
-const int   daylightOffset_sec = 3600;
-```
-Don't foreget to add this ```secrets.h``` file in ```.gitignore``` file, never share it on GitHub.
+- WiFiManager 2.0.17 https://github.com/tzapu/WiFiManager
 
-#### Install card and libraries in Arduino IDE, compile code and flash card. Connect the LCD as instructed below.
+Flash the code using Arduino IDE. You might need to press "Boot" button of the ESP32 to flash your board.
+
+Use your phone or computer to connect to the Gluci-clock Wi-Fi network. The password will be displayed on the LCD as well as printed on the serial monitor.
+
+Follow the instructions, you will have to enter:
+- Your Wi-Fi password
+- The URL of your NightScout API, which should end with this chain: "/api/v1/entries.json?count=1" (an example is: "https://your-nightscout-site/api/v1/entries.json?count=1")
+- Your NightScout API key, with "API read" rights. This is defined in the hamburger menu of NightScout, in the Admin Tools section.
+- Your local timezone parameters, which can be found at this address: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+- The contrast level for your LCD
+
+You shouldn't need to change the other parameters.
+
+If you need to return to this interface, just click multiple times on the reset button of the ESP32, and Gluci-clock will open its own Wi-Fi configuration network.
+
 
 ### Materials needed:
 
 #### ESP32 development module:
 
-AZDelivery ESP32 NodeMCU module WLAN Wifi Dev Kit C (with CP 2102).
+AZDelivery ESP32 NodeMCU module WLAN Wifi Dev Kit C (with CP 2102)
+
 https://amzn.eu/d/8uNnGYs
 
-You might need to press Boot button to flash your board.
 
-#### 16x2 LCD screen:
-I used an old screen from my DIY box...
+#### LCD screen: I used an old 16 by 2 screen from my DIY box...
 
 #### Cables
 
-### Wiring between ESP32 and LCD:
-
-The LCD used in this diagram is a 14 pins without backlight. More common ones are 16 pins with backlight, pins order may then be reversed.
+#### Wiring
 
 | 16x2 LCD pins (right to left) |  ESP32 pins  |
 | ----------------------------- | ------------ |
@@ -94,12 +65,20 @@ The LCD used in this diagram is a 14 pins without backlight. More common ones ar
 |15 +5V backlight optional      |(16 pins LCDs)|
 |16 GND backlight optional      |(16 pins LCDs)|
 
-![ESP32 with LCD 16x2 wiring diagram](static/esp32-sc1602lcd.jpg)
+Wiring with a traditional 16 by 2 LCD:
 
-### Development environment:
+![ESP32 with LCD 16x2 wiring diagram](static/esp32-LCD1602-16pins.jpg)
+
+Wiring with an old SC1602ESEB-SA-GB-K LCD:
+
+![ESP32 wiring diagram for SC1602ESEB-SA-GB-K LCD](static/esp32-sc1602lcd.jpg)
+
+### Development environment
 Arduino IDE version 1.8.19
 
-Card: ESP32 dev module. https://github.com/espressif/arduino-esp32
+Card: ESP32 dev module
+
+https://github.com/espressif/arduino-esp32
 
 Upload speed: 921600
 
@@ -127,12 +106,7 @@ JTAG Adapter: disabled
 
 Programmer: Esptool
 
-### Dependencies: libraries used
-ArduinoJson-6.21.5 https://www.arduino.cc/reference/en/libraries/arduinojson/
 
-LiquidCrystal 1.0.7 https://www.arduino.cc/reference/en/libraries/liquidcrystal/
-
-WifiMulti_Generic 1.2.2 https://www.arduino.cc/reference/en/libraries/wifimulti_generic/
 
 
 
