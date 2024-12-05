@@ -44,7 +44,7 @@ https://amzn.eu/d/8uNnGYs
 
 #### Cables
 
-#### Wiring
+### Wiring
 
 | 16x2 LCD pins (right to left) |  ESP32 pins  |
 | ----------------------------- | ------------ |
