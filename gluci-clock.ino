@@ -1,7 +1,7 @@
 /**
  * ESP32_LCD_NightScout.ino
  *
- *  Version date: 2024-12-02
+ *  Version date: 2024-12-05
  *  
  *  For diabetics using a NightScout database
  *  Retrieve glycemia every minute
@@ -10,7 +10,7 @@
 */
 
 // development IDE: Arduino 1.8.9
-// intall libraries: multiwifi, arduinoJson, ESP32
+// intall libraries: WifiManager, arduinoJson, ESP_DoubleResetDetector
 
 // Response example from NightScout:
 // [{
