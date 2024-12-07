@@ -1,4 +1,11 @@
+# secrets and backups, wherever they are in the project
 secrets.h
+*.old
+*.bak
+
+# IDE project files and folders
 *.code-workspace
-.vscode/
-.video/
+/vscode/
+
+# ShotCut video project for Youtube presentation
+/video/
