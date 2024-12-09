@@ -1,5 +1,5 @@
 # secrets and backups, wherever they are in the project
-secrets.h
+*secrets.h
 *.old
 *.bak
 

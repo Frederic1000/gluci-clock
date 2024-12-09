@@ -669,8 +669,8 @@ void loop() {
             Serial.print("U");
           }
           else {
-            lcd.print(direct);
-            Serial.print(direct);
+            lcd.print("*");
+            Serial.print("*");
           }
 
           
