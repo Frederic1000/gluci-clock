@@ -33,7 +33,7 @@ Follow the instructions, you will have to enter:
 
 You shouldn't need to change the other parameters.
 
-If you need to return to this interface, just click multiple times on the reset button of the ESP32, and Gluci-clock will open its own Wi-Fi configuration network.
+The configuration portal should be lanched automatically at power-up, then the program will run after a few minutes. If you need to force returning to this interface, just click multiple times on the reset button of the ESP32, and Gluci-clock will open its own Wi-Fi configuration network.
 
 
 ### Materials needed:
@@ -111,6 +111,9 @@ JTAG Adapter: disabled (default)
 
 Programmer: Esptool
 
+### Wishlist
+
+- In the loop: update time first then NightScout data, so that time is always correct event if NightScout doesn't respond.
 
 
 
